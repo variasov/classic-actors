@@ -2,7 +2,7 @@ from functools import wraps
 from queue import Queue
 from typing import Any, TypeVar, Type, Union, List
 
-from classic.components import add_self_annotation
+from classic.components import add_extra_annotation
 
 from .classes import Actor, Call, Result
 
@@ -18,7 +18,7 @@ def in_actor(function: T) -> T:
         self.inbox.put(call)
         return call.output
 
-    add_self_annotation(wrapper, 'inbox', Queue)
+    add_extra_annotation(wrapper, 'inbox', Queue)
 
     return wrapper
 
