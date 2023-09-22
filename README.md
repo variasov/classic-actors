@@ -1,26 +1,76 @@
-# Classic Components
+# Classic Actors
 
-This package provides decorator for creating components with 
-explicitly defined dependencies for Dependency Injection.
-Decorator marks class as component and, optionally, generates constructor from 
-type annotations.
+## Акторы
 
-Part of project "Classic".
+Акторы - это модель параллельных вычислений, строящаяся вокруг понятия актора - универсального примитива параллельного исполнения.
 
-Usage:
+### Создание актора
+
+Актор это класс, унаследованный от `Actor`.
 
 ```python
-from classic.components import component
-
-
-@component
-class SomeService:
-    prop: int
-    
-    def action(self):
-        print(self.prop)
-
-
-service = SomeService(prop=1)
-service.action()  # prints 1
+class SomeClass(Actor):
+    pass
 ```
+
+В таком классе появляются два важных метода:
+
+- `run()` - запускает цикл `loop` в отельном потоке;
+- `stop()` - останавливает цикл `loop` и завершает поток.
+
+При запуске бесконечного цикла `loop`, актор будет постоянно слушать свою очередь событий, которая называется `inbox` (почтовый ящик). Если в очередь отправить `STOP` сигнал, что делает метод актора `stop()`, то произойдет выход из цикла `loop` и затем поток завершится. Сам экземпляр актора при этом не удаляется, и может быть запущен с помощью метода `run()` позже.
+
+### Выполнение актором действия
+
+Для выполнения работы. Нужно передать в актор `Callable` объект для вычисления. Для этого есть удобная обертка в виде декоратора `@Actor.method`:
+
+```python
+class SomeClass(Actor):
+    
+    @Actor.method
+    def add(self, a, b) -> int:
+        return a + b
+```
+
+Декоратор завернет метод класса в примитив `Call`. И при вызове метода, `Call` будет помещен в очередь `inbox`. Бесконечный цикл `loop` в потоке актора сразу же получит его, произведет вычисления и отдаст результат вычислений через примитив `Future`. Важным аспектом является изменение типа результата функции. В нашем примере он изменится с `int` на `Future`. Рассмотрим пример вызова:
+
+```python
+some_class = SomeClass()
+some_class.run()
+
+future = some_class.add(1, 2)
+print(type(future)) # <class 'classic.actors.primitives.Future'>
+result = future.get()
+print(type(result)) # <class 'int'>
+print(result) # 3
+
+some_class.stop()
+```
+
+## Супервизор
+
+Супервизор это актор, который следит и управляет за потоками добавленных в него акторов.
+
+У супервизора есть два дополнительных метода:
+
+- `add(actor)` - для добавления отслеживания актора супервизором;
+- `remove(actor)` - для удаления актора из супервизора.
+
+Рассмотрим пример создания и использования супервизора:
+
+```python
+some_class_1 = SomeClass()
+some_class_2 = SomeClass()
+
+supervisor = Supervisor()
+supervisor.add(some_class_1)
+supervisor.add(some_class_2)
+supervisor.run()
+
+result = some_class_1.add(2, 3).get()
+print(result)  # 5
+
+supervisor.stop()
+```
+
+Обратим внимание, что вызов методов супервизора `run()` и `stop()` запускает и останавливает не только поток супервизора, но и по умолчанию - всех переданных ему акторов.
