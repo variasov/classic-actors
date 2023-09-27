@@ -1,6 +1,6 @@
 import threading
 
-from sources.classic.actors.actor import Actor
+from classic.actors.actor import Actor
 
 
 class Supervisor(Actor):
