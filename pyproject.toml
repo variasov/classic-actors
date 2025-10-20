@@ -4,3 +4,30 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "classic-actors"
+version = "0.1.0"
+license = "MIT"
+authors = [
+    {name = "Sergey Variasov", email = "variasov@gmail.com"},
+]
+description = "Provides utilities for creating actors"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/variasov/classic-actors"
+
+[project.optional-dependencies]
+dev = [
+    "build~=1.2.2.post1",
+    "pytest==8.3.4",
+    "pytest-cov==6.0.0",
+    "twine~=4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["sources"]
+namespaces = true

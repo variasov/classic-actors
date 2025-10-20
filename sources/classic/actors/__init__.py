@@ -1,1 +1,2 @@
-from .decorators import actor, actor_method
+from .actor import Actor, Stop
+from .supervisor import Supervisor
