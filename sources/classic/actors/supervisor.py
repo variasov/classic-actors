@@ -108,7 +108,6 @@ class Supervisor(Actor):
     _actors: ActorsRegistry
     _stopped: bool
     _is_healthy: bool
-    _max_errors: tuple[int, float] | None
     _healthcheck_filepath: str | None
     _logger: logging.Logger
 
