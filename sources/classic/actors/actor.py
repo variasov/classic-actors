@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from queue import Queue
+import queue
 from threading import Thread
 from typing import Any
 
@@ -10,7 +10,7 @@ class Stop:
 
 
 class Actor:
-    _inbox: Queue[Any]
+    _inbox: queue.Queue[Any]
     _timeout: float
     _thread: Thread | None
     _stopped: bool
@@ -18,16 +18,16 @@ class Actor:
     def __init__(
         self, *,
         timeout: float = 0.01,
-        inbox: Queue[Any] = None,
+        inbox: queue.Queue[Any] = None,
     ) -> None:
         self._thread = None
         self._timeout = timeout
-        self._inbox = inbox or Queue()
+        self._inbox = inbox or queue.Queue()
         self._stop_obj = None
         self._stopped = True
 
-    def run(self):
-        self._before_run()
+    def run(self) -> None:
+        self._before_loop()
 
         self._stopped = False
         while not self._stopped:
@@ -36,19 +36,33 @@ class Actor:
             except KeyboardInterrupt:
                 self._stop()
 
-        self._after_run()
+        self._after_loop()
 
-    def _before_run(self) -> None:
+    def _before_loop(self) -> None:
         pass
 
-    def _loop(self):
+    def _loop(self) -> None:
+        try:
+            message = self._inbox.get(True, self._timeout)
+        except queue.Empty:
+            message = self._on_timeout()
+
+        if isinstance(message, Stop):
+            self._stop()
+
+        self._on_message(message)
+
+    def _on_timeout(self) -> Any:
+        return None
+
+    def _on_message(self, message: Any) -> None:
         pass
 
-    def _after_run(self):
+    def _after_loop(self) -> None:
         pass
 
     @property
-    def timeout(self):
+    def timeout(self) -> float:
         return self._timeout
 
     @property
@@ -72,13 +86,12 @@ class Actor:
 
         return self._thread.ident
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Планирует завершение актора.
         """
-        message = Stop()
         if self.is_alive():
-            self._inbox.put(message)
+            self._inbox.put(Stop())
 
     def _stop(self) -> None:
         self._stopped = True

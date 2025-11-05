@@ -129,13 +129,13 @@ class Supervisor(Actor):
         self._healthcheck_filepath = healthcheck_filepath
         self._last_healthcheck = None
 
-    def _before_run(self):
+    def _before_loop(self):
         self._default_excepthook = threading.excepthook
         threading.excepthook = self.excepthook
 
         self._logger.info('Supervisor started')
 
-    def _after_run(self):
+    def _after_loop(self):
         threading.excepthook = self._default_excepthook
         self._actors.remove_all()
 
