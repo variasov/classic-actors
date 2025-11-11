@@ -62,7 +62,7 @@ class ActorsRegistry:
             actor = self._threads_to_actors.pop(thread_id)
             actor.stop()
 
-    def ensure(self, thread_id: int) -> None | int | RuntimeError:
+    def ensure(self, thread_id: int) -> None | Actor | RuntimeError:
         actor = self._threads_to_actors.get(thread_id)
         if actor is not None:
             self._threads_to_actors.pop(thread_id, None)
@@ -82,6 +82,8 @@ class ActorsRegistry:
                     f'for {self._max_errors_period} period, '
                     f'and was removed from supervisor.'
                 )
+
+        return actor
 
     def ensure_all(self) -> None:
         for actor_id, thread_id in self._actors_to_threads.items():
@@ -174,11 +176,14 @@ class Supervisor(Actor):
     def _on_thread_failed(self, message: ThreadFailed):
         if message.thread is None:
             self._actors.ensure_all()
+            self._logger.warning(f'Failed thread, but no thread id is known')
         else:
             result = self._actors.ensure(message.thread.ident)
             if isinstance(result, RuntimeError):
                 self._logger.error(result)
                 self._is_healthy = False
+            elif isinstance(result, Actor):
+                self._logger.info('Actor has been revived: %s', result)
 
     def add(self, actor: Actor):
         """
