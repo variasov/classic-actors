@@ -133,7 +133,7 @@ class Supervisor(Actor):
 
     def _before_loop(self):
         self._default_excepthook = threading.excepthook
-        threading.excepthook = self.excepthook
+        threading.excepthook = self._excepthook
 
         self._logger.info('Supervisor started')
 
@@ -215,13 +215,18 @@ class Supervisor(Actor):
         self._actors.remove(task.actor)
         task.future.set_result(None)
 
-    def excepthook(self, args):
+    def _excepthook(self, args):
         """
         Наш обработчик не перехваченных исключений потока.
 
         Args:
             args (_type_): Аргументы упавшего потока.
         """
+        self._logger.exception(
+            'Exception in thread %s',
+            args.thread,
+            exc_info=(args.exc_type, args.exc_value, args.exc_traceback),
+        )
         self._inbox.put(ThreadFailed(args.thread))
 
     def _healthcheck(self):
